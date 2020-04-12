@@ -1,0 +1,7 @@
+name: ProdigyRope
+version: 1.0
+author: cocoraid
+api-version: 1.13
+main: fr.cocoraid.prodigyrope.ProdigyRope
+commands:
+    prodigyrope:
