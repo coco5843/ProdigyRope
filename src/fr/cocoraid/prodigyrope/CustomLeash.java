@@ -1,4 +1,4 @@
-package fr.cocoraid.prodigyrope;
+/*package fr.cocoraid.prodigyrope;
 
 import net.minecraft.server.v1_15_R1.*;
 import org.bukkit.Location;
@@ -14,7 +14,6 @@ public class CustomLeash extends EntityLeash {
         super(EntityTypes.LEASH_KNOT,((CraftWorld)loc.getWorld()).getHandle());
         this.loc = loc;
         setPosition(loc.getX() + 0.5D, loc.getY() + 0.5D, loc.getZ() + 0.5D);
-        a(new AxisAlignedBB(locX() - 0.1875D, locY() - 0.25D + 0.125D, locZ() - 0.1875D, locX() + 0.1875D, locY() + 0.25D + 0.125D, locZ() + 0.1875D));
     }
 
     public  void spawn() {
@@ -32,4 +31,6 @@ public class CustomLeash extends EntityLeash {
     public void tick() {
 
     }
-}
+
+
+}*/
