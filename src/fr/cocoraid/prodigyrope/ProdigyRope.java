@@ -1,11 +1,9 @@
 package fr.cocoraid.prodigyrope;
 
-import net.minecraft.server.v1_15_R1.EntitySlime;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_15_R1.entity.CraftSlime;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Slime;
 import org.bukkit.event.EventHandler;
@@ -13,11 +11,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityUnleashEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,9 +28,21 @@ import java.util.UUID;
 public class ProdigyRope extends JavaPlugin implements Listener {
 
 
+    private boolean isPapermc = false;
+    {
+        try {
+            isPapermc = Class.forName("io.papermc.paperclip.Agent") != null;
+        } catch (ClassNotFoundException e) {
+            Bukkit.getLogger().info("Not paper");
+        }
+    }
+
+
+
+
     private Class<?> insentient = Reflection.getMinecraftClass("EntityInsentient");
     private Reflection.MethodInvoker getHandleMethod = Reflection.getMethod(Reflection.getCraftBukkitClass("entity.CraftSlime"),"getHandle");
-    private Reflection.MethodInvoker setInvisibleMethod = Reflection.getMethod(Reflection.getMinecraftClass("EntityLiving"),"setInvisible",boolean.class);
+    //private Reflection.MethodInvoker setInvisibleMethod = Reflection.getMethod(Reflection.getMinecraftClass("EntityLiving"),"setInvisible",boolean.class);
     private Reflection.MethodInvoker setLeashHolderMethod = Reflection.getMethod(insentient,"setLeashHolder",Reflection.getMinecraftClass("Entity"),boolean.class);
 
     private ProdigyRope instance;
@@ -59,35 +73,54 @@ public class ProdigyRope extends JavaPlugin implements Listener {
             a = p.getWorld().spawn(p.getLocation(),Slime.class);
             b = p.getWorld().spawn(p.getLocation().add(0,2,0),Slime.class);
 
-            a.setSize(1);
+            a.setCustomName("rope");
+            b.setCustomName("rope");
             a.setAI(false);
-            b.setSize(1);
             b.setAI(false);
             a.setRemoveWhenFarAway(false);
             b.setRemoveWhenFarAway(false);
             a.setInvulnerable(true);
             b.setInvulnerable(true);
+            a.setSilent(true);
+            b.setSilent(true);
+            b.setSize(1);
+            a.setSize(1);
+            a.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY,Integer.MAX_VALUE,1,false,false));
+            b.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY,Integer.MAX_VALUE,1,false,false));
 
             Object nms1 = getHandleMethod.invoke(a);
             Object nms2 = getHandleMethod.invoke(b);
-            task = new BukkitRunnable() {
+            /*task = new BukkitRunnable() {
                 @Override
                 public void run() {
                     setInvisibleMethod.invoke(nms1,true);
                     setInvisibleMethod.invoke(nms2,true);
 
                 }
-            }.runTaskLater(instance,2);
+            }.runTaskLater(instance,2);*/
             setLeashHolderMethod.invoke(nms1,nms2,true);
         }
 
-        public void updatePlacing(Location loc) {
-            Location l = loc.add(loc.getDirection().multiply(2));
-            if(next) {
-                b.teleport(l);
-            } else {
-                a.teleport(l.clone().subtract(0,0.7,0));
-                b.teleport(l.clone().add(0,6,0));
+        public void updatePlacing(Player player) {
+
+            if(isPapermc) {
+                Location l = player.getEyeLocation().add(player.getEyeLocation().getDirection().multiply(2));
+                if (next) {
+                    b.teleport(l);
+                } else {
+                    a.teleport(l.clone().subtract(0, 0.7, 0));
+                    b.teleport(l.clone().add(0, 6, 0));
+                }
+            }  else {
+                Location eye = player.getLocation().add(0,2,0);
+                Vector dir = eye.getDirection();
+                Location l = eye.clone().add(dir.multiply(2));
+                if (next) {
+                    b.teleport(l);
+                } else {
+                    a.teleport(l);
+                    b.teleport(l);
+                }
             }
         }
 
@@ -133,7 +166,7 @@ public class ProdigyRope extends JavaPlugin implements Listener {
                     placers.remove(player.getUniqueId());
                     return;
                 }
-                placers.get(player.getUniqueId()).updatePlacing(player.getEyeLocation());
+                placers.get(player.getUniqueId()).updatePlacing(player);
             }
         }.runTaskTimer(this,0,0);
         placers.get(player.getUniqueId()).setTask(task);
@@ -185,6 +218,19 @@ public class ProdigyRope extends JavaPlugin implements Listener {
         }
 
     }
+
+    @EventHandler
+    public void potion(EntityPotionEffectEvent e) {
+        if(e.getCause() == EntityPotionEffectEvent.Cause.EXPIRATION) {
+            if(e.getEntity().getName().equalsIgnoreCase("rope") && e.getEntity() instanceof Slime) {
+                if(((Slime) e.getEntity()).getLeashHolder() != null && ((Slime) e.getEntity()).getLeashHolder() instanceof Slime) {
+                    ((Slime) e.getEntity()).addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY,Integer.MAX_VALUE,1,false,false));
+                }
+            }
+        }
+    }
+
+
 
 
     @Override
